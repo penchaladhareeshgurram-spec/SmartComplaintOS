@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartComplaint-OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Montserrat:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #0c0c0c;
+            color: #f1f1f1;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .zenitsu-font { font-family: 'Cinzel', serif; }
+        .thunder-glow { box-shadow: 0 0 15px #facc15, 0 0 30px #eab308; }
+        .thunder-gradient { background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%); }
+        .lightning-border { border: 2px solid transparent; border-image: linear-gradient(45deg, #facc15, #ffffff, #eab308) 1; }
+        .card-bg { background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(10px); }
+        .lightning-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: -1; opacity: 0.05;
+            background-image: url('https://www.transparenttextures.com/patterns/asfalt-dark.png');
+        }
+        @keyframes thunder-strike {
+            0% { background: transparent; }
+            10% { background: rgba(255, 255, 255, 0.1); }
+            15% { background: transparent; }
+        }
+        .strike-anim { animation: thunder-strike 5s infinite; }
+        select option { background: #1a1a1a; color: white; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="root"></div>
+    <div class="lightning-bg strike-anim"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- TYPES / ENUMS ---
+        const ComplaintStatus = { PENDING: 'Pending', IN_PROGRESS: 'In Progress', RESOLVED: 'Resolved' };
+        const ThreatLevel = { COMMON: 'Common Demon', LOWER_MOON: 'Lower Moon', UPPER_MOON: 'Upper Moon' };
+
+        // --- COMPONENTS ---
+
+        const Header = ({ user, onLogout }) => (
+            <header className="border-b-2 border-yellow-500 bg-black/80 sticky top-0 z-50 backdrop-blur-md">
+                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center thunder-glow">
+                            <span className="text-black font-black text-xl">⚡</span>
+                        </div>
+                        <h1 className="zenitsu-font text-xl font-bold tracking-widest text-yellow-400 uppercase">
+                            SmartComplaint-OS
+                        </h1>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-[10px] text-yellow-500 uppercase font-bold">Current Slayer</p>
+                            <p className="text-sm font-bold">{user.name}</p>
+                        </div>
+                        <button onClick={onLogout} className="px-4 py-1.5 border border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-all font-bold text-xs uppercase tracking-widest">
+                            LOG-OUT
+                        </button>
+                    </div>
+                </div>
+            </header>
+        );
+
+        const Login = ({ onLogin }) => {
+            const [isRegister, setIsRegister] = useState(false);
+            const [email, setEmail] = useState('');
+            const [name, setName] = useState('');
+            const [password, setPassword] = useState('');
+            const [role, setRole] = useState('user');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!password) return alert('Password required!');
+                onLogin({ id: Math.random().toString(36).substr(2, 9), name: name || email.split('@')[0], email, role, password });
+            };
+
+            return (
+                <div className="max-w-md mx-auto mt-20 p-8 card-bg rounded-lg lightning-border shadow-2xl relative">
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-20 h-20 bg-yellow-400 rounded-full flex items-center justify-center border-4 border-black thunder-glow animate-pulse">
+                        <span className="text-4xl">⚡</span>
+                    </div>
+                    <h2 className="zenitsu-font text-3xl font-bold text-center text-yellow-400 mb-8 uppercase tracking-widest">
+                        {isRegister ? 'Training' : 'Resolve'}
+                    </h2>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {isRegister && (
+                            <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 p-3 rounded text-white" placeholder="Slayer Name" />
+                        )}
+                        <input required type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 p-3 rounded text-white" placeholder="Email" />
+                        <input required type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 p-3 rounded text-white" placeholder="Password" />
+                        <select value={role} onChange={e => setRole(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 p-3 rounded text-white">
+                            <option value="user">Resident (User)</option>
+                            <option value="admin">Hashira (Admin)</option>
+                        </select>
+                        <button type="submit" className="w-full thunder-gradient text-black font-black py-4 rounded-lg uppercase tracking-widest">
+                            {isRegister ? 'Join' : 'Strike Fast'}
+                        </button>
+                    </form>
+                    <button onClick={() => setIsRegister(!isRegister)} className="mt-4 text-center w-full text-yellow-400 font-bold text-sm">
+                        {isRegister ? 'Already a slayer? Login' : 'New to the corps? Register'}
+                    </button>
+                </div>
+            );
+        };
+
+        const ComplaintForm = ({ user, communities, onSubmit }) => {
+            const [title, setTitle] = useState('');
+            const [description, setDescription] = useState('');
+            const [commId, setCommId] = useState(user.communityId || '');
+            const [image, setImage] = useState(null);
+            const [loc, setLoc] = useState(null);
+            const [capturing, setCapturing] = useState(false);
+            const videoRef = useRef(null);
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                navigator.geolocation.getCurrentPosition(p => setLoc({ lat: p.coords.latitude, lng: p.coords.longitude }));
+            }, []);
+
+            const startCam = async () => {
+                setCapturing(true);
+                const s = await navigator.mediaDevices.getUserMedia({ video: true });
+                if (videoRef.current) videoRef.current.srcObject = s;
+            };
+
+            const takePic = () => {
+                const ctx = canvasRef.current.getContext('2d');
+                canvasRef.current.width = videoRef.current.videoWidth;
+                canvasRef.current.height = videoRef.current.videoHeight;
+                ctx.drawImage(videoRef.current, 0, 0);
+                setImage(canvasRef.current.toDataURL('image/png'));
+                const s = videoRef.current.srcObject;
+                s.getTracks().forEach(t => t.stop());
+                setCapturing(false);
+            };
+
+            const handleSub = (e) => {
+                e?.preventDefault();
+                if (!commId) return alert("Select Estate!");
+                onSubmit({ id: Date.now(), userId: user.id, userName: user.name, title: title || "SOS EMERGENCY", description, image, location: loc, status: ComplaintStatus.PENDING, timestamp: Date.now(), communityId: commId });
+                setTitle(''); setDescription(''); setImage(null);
+            };
+
+            return (
+                <div className="space-y-4">
+                    <button onClick={handleSub} className="w-full bg-red-600 py-4 rounded font-black uppercase animate-pulse">Emergency SOS strike</button>
+                    <form onSubmit={handleSub} className="card-bg p-6 border border-yellow-900/50 rounded-xl space-y-4">
+                        <select required value={commId} onChange={e => setCommId(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 p-3 rounded text-white">
+                            <option value="">Target Estate...</option>
+                            {communities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                        <input required type="text" placeholder="Threat Title" value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 p-3 rounded text-white" />
+                        <textarea required placeholder="Threat Details" value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 p-3 rounded text-white" />
+                        {capturing ? (
+                            <div className="relative"><video ref={videoRef} autoPlay className="w-full rounded" /><button type="button" onClick={takePic} className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-yellow-400 text-black px-4 py-1 rounded font-bold">Strike</button></div>
+                        ) : image ? (
+                            <img src={image} className="w-full rounded" />
+                        ) : (
+                            <button type="button" onClick={startCam} className="w-full py-8 border-2 border-dashed border-neutral-700 text-neutral-500 font-bold uppercase text-xs">Capture Evidence 📷</button>
+                        )}
+                        <canvas ref={canvasRef} className="hidden" />
+                        <button type="submit" className="w-full thunder-gradient text-black font-black py-3 rounded uppercase">Send Scroll</button>
+                    </form>
+                </div>
+            );
+        };
+
+        const ComplaintList = ({ complaints, user, onUpdateStatus }) => {
+            if (!complaints.length) return <div className="text-center py-10 text-neutral-600 font-black uppercase">Peaceful Skies...</div>;
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {complaints.map(c => (
+                        <div key={c.id} className={`card-bg border rounded-xl overflow-hidden ${c.threatLevel === ThreatLevel.UPPER_MOON ? 'border-red-500 shadow-[0_0_10px_red]' : 'border-neutral-800'}`}>
+                            {c.image && <img src={c.image} className="h-40 w-full object-cover" />}
+                            <div className="p-4">
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-[10px] font-black uppercase text-yellow-500 border border-yellow-500 px-2 rounded">{c.status}</span>
+                                    {c.threatLevel && <span className="text-[10px] font-black uppercase text-red-500">{c.threatLevel}</span>}
+                                </div>
+                                <h4 className="zenitsu-font font-bold mb-2">{c.title}</h4>
+                                <p className="text-xs text-neutral-400 mb-4">{c.description}</p>
+                                {user.role === 'admin' && (
+                                    <div className="space-y-2 border-t border-white/10 pt-4">
+                                        <div className="flex gap-1">
+                                            {Object.values(ComplaintStatus).map(s => <button key={s} onClick={() => onUpdateStatus(c.id, s)} className={`text-[8px] flex-1 py-1 rounded uppercase font-bold ${c.status === s ? 'bg-yellow-500 text-black' : 'bg-neutral-800'}`}>{s}</button>)}
+                                        </div>
+                                        <div className="flex gap-1">
+                                            {Object.values(ThreatLevel).map(t => <button key={t} onClick={() => onUpdateStatus(c.id, c.status, t)} className={`text-[8px] flex-1 py-1 rounded uppercase font-bold ${c.threatLevel === t ? 'bg-red-500 text-white' : 'bg-neutral-800'}`}>{t.split(' ')[0]}</button>)}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const AdminPanel = ({ user, communities, allUsers, onCreate, onAssign, onBroadcast }) => {
+            const [name, setName] = useState('');
+            const [msg, setMsg] = useState('');
+            return (
+                <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="card-bg p-6 rounded-xl border border-yellow-500/30">
+                            <h3 className="zenitsu-font text-yellow-500 mb-4">🦅 CROW BROADCAST</h3>
+                            <textarea value={msg} onChange={e => setMsg(e.target.value)} className="w-full bg-black/50 p-2 rounded text-sm mb-2" rows="3" placeholder="Message to estate..." />
+                            <button onClick={() => {onBroadcast(user.communityId, msg); setMsg('');}} className="w-full thunder-gradient text-black font-bold py-2 rounded text-xs">DISPATCH</button>
+                        </div>
+                        <div className="card-bg p-6 rounded-xl border border-neutral-800">
+                            <h3 className="zenitsu-font text-yellow-500 mb-4">🏠 FOUND ESTATE</h3>
+                            <input value={name} onChange={e => setName(e.target.value)} className="w-full bg-black/50 p-2 rounded text-sm mb-2" placeholder="Estate Name..." />
+                            <button onClick={() => {onCreate(name); setName('');}} className="w-full border border-yellow-500 text-yellow-500 py-2 rounded text-xs">CREATE</button>
+                        </div>
+                    </div>
+                    <div className="card-bg p-6 rounded-xl border border-neutral-800">
+                        <h3 className="zenitsu-font text-yellow-500 mb-4">SLAYER ROSTER</h3>
+                        <table className="w-full text-xs text-left">
+                            <thead><tr className="border-b border-neutral-800 text-yellow-600"><th className="pb-2">Slayer</th><th>Estate</th><th className="text-right">Assign</th></tr></thead>
+                            <tbody>
+                                {allUsers.filter(u => u.role === 'user').map(s => (
+                                    <tr key={s.id} className="border-b border-neutral-900">
+                                        <td className="py-2">{s.name}</td>
+                                        <td>{communities.find(c => c.id === s.communityId)?.name || 'NONE'}</td>
+                                        <td className="text-right">
+                                            <select className="bg-neutral-900 border border-neutral-700 rounded" value={s.communityId || ''} onChange={e => onAssign(s.id, e.target.value)}>
+                                                <option value="">Station...</option>
+                                                {communities.filter(c => c.adminId === user.id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            </select>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP ---
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [complaints, setComplaints] = useState([]);
+            const [communities, setCommunities] = useState([]);
+            const [allUsers, setAllUsers] = useState([]);
+            const [tab, setTab] = useState('view');
+
+            useEffect(() => {
+                const c = localStorage.getItem('z_c'); if (c) setComplaints(JSON.parse(c));
+                const m = localStorage.getItem('z_m'); if (m) setCommunities(JSON.parse(m));
+                const u = localStorage.getItem('z_u'); if (u) setAllUsers(JSON.parse(u));
+            }, []);
+
+            const save = (c, m, u) => {
+                if (c) localStorage.setItem('z_c', JSON.stringify(c));
+                if (m) localStorage.setItem('z_m', JSON.stringify(m));
+                if (u) localStorage.setItem('z_u', JSON.stringify(u));
+            };
+
+            const handleLogin = (u) => {
+                setUser(u);
+                const updated = allUsers.find(x => x.email === u.email) ? allUsers : [...allUsers, u];
+                setAllUsers(updated);
+                save(null, null, updated);
+            };
+
+            const onUpdate = (id, status, threat) => {
+                const updated = complaints.map(x => x.id === id ? { ...x, status, threatLevel: threat || x.threatLevel } : x);
+                setComplaints(updated); save(updated);
+            };
+
+            const onAdd = (c) => {
+                const updated = [c, ...complaints]; setComplaints(updated); save(updated);
+            };
+
+            const onCreate = (name) => {
+                const newC = { id: Date.now(), name, adminId: user.id };
+                const updated = [...communities, newC]; setCommunities(updated); save(null, updated);
+            };
+
+            const onAssign = (uid, cid) => {
+                const updated = allUsers.map(u => u.id === uid ? { ...u, communityId: cid } : u);
+                setAllUsers(updated); save(null, null, updated);
+                if (user.id === uid) setUser({ ...user, communityId: cid });
+            };
+
+            const onBroad = (cid, m) => {
+                const updated = communities.map(c => c.id === cid ? { ...c, announcement: m } : c);
+                setCommunities(updated); save(null, updated);
+            };
+
+            if (!user) return <div className="p-4"><Login onLogin={handleLogin} /></div>;
+
+            const myComm = communities.find(c => c.id === user.communityId);
+            const filtered = user.role === 'admin' ? complaints.filter(c => c.communityId === user.communityId) : complaints.filter(c => c.userId === user.id);
+            const resolved = complaints.filter(c => c.userId === user.id && c.status === ComplaintStatus.RESOLVED).length;
+            const rank = ['Mizunoto', 'Mizunoe', 'Kanoto', 'Kanoe', 'Kinoe'][Math.min(Math.floor(resolved/2), 4)];
+
+            return (
+                <div className="min-h-screen">
+                    <Header user={user} onLogout={() => setUser(null)} />
+                    <main className="container mx-auto px-4 py-8">
+                        {myComm?.announcement && (
+                            <div className="bg-yellow-500 text-black p-3 rounded mb-6 flex justify-between font-bold animate-pulse">
+                                <span>🦅 Crow: {myComm.announcement}</span>
+                                <button onClick={() => onBroad(user.communityId, "")}>✕</button>
+                            </div>
+                        )}
+                        {user.role === 'user' && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                                <div className="card-bg p-4 rounded border border-yellow-500/20">
+                                    <p className="text-[10px] uppercase font-bold text-yellow-600">Rank</p>
+                                    <h2 className="zenitsu-font text-xl">{rank}</h2>
+                                </div>
+                                <div className="card-bg p-4 rounded border border-blue-500/20">
+                                    <p className="text-[10px] uppercase font-bold text-blue-600">Estate</p>
+                                    <h2 className="text-sm font-bold">{myComm?.name || "NONE"}</h2>
+                                </div>
+                                <div className="card-bg p-4 rounded border border-green-500/20">
+                                    <p className="text-[10px] uppercase font-bold text-green-600">Missions</p>
+                                    <h2 className="text-xl font-bold">{resolved} Resolved</h2>
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex gap-4 border-b border-neutral-800 mb-6">
+                            <button onClick={() => setTab('view')} className={`pb-2 uppercase text-xs font-black ${tab === 'view' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-neutral-500'}`}>Missions</button>
+                            {user.role === 'user' && <button onClick={() => setTab('form')} className={`pb-2 uppercase text-xs font-black ${tab === 'form' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-neutral-500'}`}>Report</button>}
+                            {user.role === 'admin' && <button onClick={() => setTab('admin')} className={`pb-2 uppercase text-xs font-black ${tab === 'admin' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-neutral-500'}`}>Hashira</button>}
+                        </div>
+                        {tab === 'view' && <ComplaintList complaints={filtered} user={user} onUpdateStatus={onUpdate} />}
+                        {tab === 'form' && <ComplaintForm user={user} communities={communities} onSubmit={onAdd} />}
+                        {tab === 'admin' && <AdminPanel user={user} communities={communities} allUsers={allUsers} onCreate={onCreate} onAssign={onAssign} onBroadcast={onBroad} />}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
